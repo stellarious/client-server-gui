@@ -1,17 +1,32 @@
 import sys
+import socket
 from PyQt5.QtWidgets import (QWidget, QPushButton, 
 	QHBoxLayout, QVBoxLayout, QApplication, QListView, QRadioButton,
-	QTextBrowser)
+	QTextBrowser, QMessageBox)
 from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QCoreApplication
 
 class ClientWindow(QWidget):
 
-	def __init__(self):
+	def __init__(self, host, port):
 		super().__init__()
+		connection = self.connect(host, port)
 		self.initUI()
 
 
-	def initUI(self):
+	def connect(self, host, port):
+		conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		try:
+			conn.connect((host, port))
+		except:
+			msg = QMessageBox.critical(self, 'Connection Error',
+			'Well, it looks like server is shut down.', QMessageBox.Ok)
+			sys.exit(1)
+		else:
+			return conn
+
+
+	def initUI(self):	
 		lstView = QListView()
 		txtView = QTextBrowser()
 		txtView.append('INFO FROM SERVER')
@@ -20,12 +35,14 @@ class ClientWindow(QWidget):
 		left_vbox.addWidget(lstView)
 		left_vbox.addWidget(txtView)
 
-		radio_text = ('View All', 'Add New', 'Edit', 'Delete', 'Search')
-		radio_buttons = [QPushButton(x) for x in radio_text]
+		buttons_text = ('View All', 'Add New', 'Edit', 'Delete', 'Search')
+		buttons = [QPushButton(x) for x in buttons_text]
 		exec_btn = QPushButton('>>>')
 
+		[btn.clicked.connect(self.send_query) for btn in buttons]
+
 		right_vbox = QVBoxLayout()
-		[right_vbox.addWidget(r) for r in radio_buttons]
+		[right_vbox.addWidget(r) for r in buttons]
 		right_vbox.addStretch()
 		right_vbox.addWidget(exec_btn)
 
@@ -41,8 +58,26 @@ class ClientWindow(QWidget):
 
 		self.show()
 
+	def closeEvent(self, event):
+		reply = QMessageBox.question(self, 'Message',
+			"Are you sure to quit?", QMessageBox.Yes |
+			QMessageBox.No, QMessageBox.No)
+
+		if reply == QMessageBox.Yes:
+			event.accept()
+		else:
+			event.ignore()
+
+
+	def send_query(self):
+		self.conn.send()
+
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
-	w = ClientWindow()
+
+	HOST = '127.0.0.1'
+	PORT = 1488
+
+	w = ClientWindow(HOST, PORT)
 	sys.exit(app.exec_())
