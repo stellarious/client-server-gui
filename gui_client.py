@@ -1,49 +1,62 @@
 import sys
-import socket
-from PyQt5.QtWidgets import (QWidget, QPushButton, 
-	QHBoxLayout, QVBoxLayout, QApplication, QListView, 
-	QTextBrowser, QMessageBox)
+from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import *
+from PyQt5.QtNetwork import QTcpSocket, QHostAddress
 
 class ClientWindow(QWidget):
 	def __init__(self, host, port):
 		super().__init__()
-		self.connection = self.connect(host, port)
+		self.connect(host, port)
 		self.initUI()
 
 
 	def connect(self, host, port):
-		conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		try:
-			conn.connect((host, port))
-		except socket.error as e:
-			msg = QMessageBox.critical(self, 'Connection Error',
-			str(e), QMessageBox.Ok)
-			sys.exit(1)
-		else:
-			return conn
+		self.socket = QTcpSocket()
+		self.socket.connectToHost(host, port)
+
+		self.socket.connected.connect(self.handle_connection)
+		self.socket.error.connect(self.sock_error)
+		self.socket.readyRead.connect(self.read_from_server)
+
+
+	def handle_connection(self):
+		self.txt_view.append('Connected to {}:{}'.format(
+			self.socket.peerAddress().toString(),
+			self.socket.peerPort()))
+
+
+	def send_query(self):
+		action = self.sender().text()
+
+		self.request = QByteArray()
+		stream = QDataStream(self.request, QIODevice.WriteOnly)
+		stream.writeQString(action)
+		self.socket.write(self.request)
+
+
+	def sock_error(self):
+		msg = QMessageBox.critical(self, 'Connection Error',
+		self.sender().errorString(), QMessageBox.Ok)
+		sys.exit(1)
 
 
 	def initUI(self):
-		lst_view = QListView()
-		txt_view = QTextBrowser()
-		txt_view.append('INFO FROM SERVER')
+		self.lst_view = QListView()
+		self.txt_view = QTextBrowser()
 
 		left_vbox = QVBoxLayout()
-		left_vbox.addWidget(lst_view)
-		left_vbox.addWidget(txt_view)
+		left_vbox.addWidget(self.lst_view)
+		left_vbox.addWidget(self.txt_view)
 
 		buttons_text = ('View All', 'Add New', 'Edit', 'Delete', 'Search')
 		buttons = [QPushButton(x) for x in buttons_text]
-		exec_btn = QPushButton('>>>')
 
 		[btn.clicked.connect(self.send_query) for btn in buttons]
 
 		right_vbox = QVBoxLayout()
 		[right_vbox.addWidget(r) for r in buttons]
 		right_vbox.addStretch()
-		right_vbox.addWidget(exec_btn)
 
 		hbox = QHBoxLayout()
 		hbox.addLayout(left_vbox)
@@ -58,20 +71,12 @@ class ClientWindow(QWidget):
 		self.show()
 
 
-	# def closeEvent(self, event):
-	# 	reply = QMessageBox.question(self, 'Message',
-	# 		"Are you sure to quit?", QMessageBox.Yes |
-	# 		QMessageBox.No, QMessageBox.No)
-
-	# 	if reply == QMessageBox.Yes:
-	# 		event.accept()
-	# 	else:
-	# 		event.ignore()
-
-
-	def send_query(self):
-		action = self.sender().text()
-		self.connection.send(action.encode())
+	def read_from_server(self):
+		s = self.sender()
+		if s.bytesAvailable() > 0:
+			stream = QDataStream(s)
+			client_data = stream.readQString()
+			self.txt_view.append(client_data)
 
 
 if __name__ == '__main__':
