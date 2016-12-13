@@ -1,8 +1,11 @@
 import sys
+import pickle
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import *
 from PyQt5.QtNetwork import QTcpSocket, QHostAddress
+from dialogs import AddDialog
+
 
 class ClientWindow(QWidget):
 	def __init__(self, host, port):
@@ -25,13 +28,33 @@ class ClientWindow(QWidget):
 			self.socket.peerAddress().toString(),
 			self.socket.peerPort()))
 
-
-	def send_query(self):
+	def query_manager(self):
 		action = self.sender().text()
 
-		self.request = QByteArray()
-		stream = QDataStream(self.request, QIODevice.WriteOnly)
-		stream.writeQString(action)
+		if action == 'View All':
+			q = (action, 0)
+			self.send_query(q)
+
+		elif action == 'Add New':
+			ok, data = AddDialog.get_data()
+			if ok:
+				q = (action, data)
+				self.send_query(q)
+
+		elif action == 'Edit':
+			pass
+
+		elif action == 'Delete':
+			pass
+
+		elif action == 'Search':
+			pass
+
+
+
+	def send_query(self, data):
+		bytes_data = pickle.dumps(data)
+		self.request = QByteArray(bytes_data)
 		self.socket.write(self.request)
 
 
@@ -52,7 +75,7 @@ class ClientWindow(QWidget):
 		buttons_text = ('View All', 'Add New', 'Edit', 'Delete', 'Search')
 		buttons = [QPushButton(x) for x in buttons_text]
 
-		[btn.clicked.connect(self.send_query) for btn in buttons]
+		[btn.clicked.connect(self.query_manager) for btn in buttons]
 
 		right_vbox = QVBoxLayout()
 		[right_vbox.addWidget(r) for r in buttons]
@@ -74,9 +97,11 @@ class ClientWindow(QWidget):
 	def read_from_server(self):
 		s = self.sender()
 		if s.bytesAvailable() > 0:
-			stream = QDataStream(s)
-			client_data = stream.readQString()
-			self.txt_view.append(client_data)
+			server_reply = s.read(4096)
+
+		str_data = pickle.loads(server_reply)
+
+		self.txt_view.append(str(str_data))
 
 
 if __name__ == '__main__':
