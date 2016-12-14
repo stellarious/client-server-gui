@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import *
 from PyQt5.QtNetwork import QTcpSocket, QHostAddress
-from dialogs import AddDialog
+from dialogs import AddDialog, SearchDialog
 
 
 class ClientWindow(QWidget):
@@ -50,9 +50,15 @@ class ClientWindow(QWidget):
 				q = (action, data)
 				self.send_query(q)
 
-		elif action == 'Search':
+		elif action == 'Sort':
 			pass
 
+		elif action == 'Search':
+			if self.lst_view.count():
+				ok, data = SearchDialog.get_data()
+				if ok:
+					q = (action, data)
+					self.send_query(q)
 
 
 	def send_query(self, data):
@@ -75,7 +81,8 @@ class ClientWindow(QWidget):
 		left_vbox.addWidget(self.lst_view)
 		left_vbox.addWidget(self.txt_view)
 
-		buttons_text = ('View All', 'Add New', 'Edit', 'Delete', 'Search')
+		buttons_text = ('View All', 'Add New', 'Edit',
+			'Delete', 'Sort', 'Search')
 		buttons = [QPushButton(x) for x in buttons_text]
 
 		[btn.clicked.connect(self.query_manager) for btn in buttons]

@@ -1,6 +1,7 @@
 import os
 import sys
 import pickle
+import operator
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon
@@ -25,6 +26,7 @@ class ServerWindow(QWidget):
 			'View All': self.show_all,
 			'Add New': self.add_record,
 			'Delete': self.delete_record,
+			'Search': self.search,
 		}
 
 	def initUI(self):
@@ -65,8 +67,8 @@ class ServerWindow(QWidget):
 
 		try:
 			self.send_message(s, self.options[cmd_name](cmd_params))
-		except:
-			self.txt_view.append('Coming soon')
+		except Exception as e:
+			self.txt_view.append(str(e))
 
 
 	def send_message(self, socket, data):
@@ -113,7 +115,23 @@ class ServerWindow(QWidget):
 			if item.id == obj_id:
 				self.db.remove(item)
 				return (True, self.db)
-		return (False, '<<< No such record')
+
+	def search(self, args):
+		if not self.db: return '<<< DB is empty'
+
+		field, value = args
+
+		try:
+			value = int(value) #convert if int
+		except:
+			pass
+
+		field_vals = list(map(operator.attrgetter(field), self.db))
+		items_vals = list(zip(self.db, field_vals))
+		items = [x[0] for x in items_vals if x[1] == value]
+		if items: return (True, items)
+		return (False, ' <<< Nothing found')
+
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
