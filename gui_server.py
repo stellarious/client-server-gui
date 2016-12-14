@@ -27,6 +27,7 @@ class ServerWindow(QWidget):
 			'Add New': self.add_record,
 			'Delete': self.delete_record,
 			'Search': self.search,
+			'Sort': self.sort,
 		}
 
 	def initUI(self):
@@ -117,10 +118,7 @@ class ServerWindow(QWidget):
 				return (True, self.db)
 
 	def search(self, args):
-		if not self.db: return '<<< DB is empty'
-
 		field, value = args
-
 		try:
 			value = int(value) #convert if int
 		except:
@@ -130,7 +128,11 @@ class ServerWindow(QWidget):
 		items_vals = list(zip(self.db, field_vals))
 		items = [x[0] for x in items_vals if x[1] == value]
 		if items: return (True, items)
-		return (False, ' <<< Nothing found')
+		return (False, '<<< Nothing found')
+
+	def sort(self, args):
+		sorted_items = list(sorted(self.db, key=operator.attrgetter(args)))
+		return (True, sorted_items)
 
 
 if __name__ == '__main__':

@@ -17,5 +17,5 @@ class StorageSystem:
 
 	def __str__(self):
 		return '{}.{}, {} MiB, {} disks, ${}'.format(
-			self.id, self.system_cache, self.max_disks,
-			self.model, self.price)
+			self.id, self.model, self.system_cache,
+			self.max_disks, self.price)

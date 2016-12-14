@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import *
 from PyQt5.QtNetwork import QTcpSocket, QHostAddress
-from dialogs import AddDialog, SearchDialog
+from dialogs import AddDialog, SearchDialog, SortDialog
 
 
 class ClientWindow(QWidget):
@@ -51,7 +51,11 @@ class ClientWindow(QWidget):
 				self.send_query(q)
 
 		elif action == 'Sort':
-			pass
+			if self.lst_view.count():
+				ok, data = SortDialog.get_data()
+				if ok:
+					q = (action, data)
+					self.send_query(q)
 
 		elif action == 'Search':
 			if self.lst_view.count():
@@ -100,6 +104,8 @@ class ClientWindow(QWidget):
 		self.setWindowTitle('Client')
 		self.setGeometry(300, 300, 350, 400)
 		self.setWindowIcon(QIcon('icon.png'))
+
+		self.send_query(('View All', 0)) # init data in list_view
 
 		self.show()
 

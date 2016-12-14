@@ -137,3 +137,44 @@ class SearchDialog(QDialog):
         result = dialog.exec_()
         data = dialog.data_from_form()
         return result == QDialog.Accepted, data
+
+
+class SortDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+
+    def initUI(self):
+        attr_names = ('id', 'model', 'system_cache', 'max_controllers',
+        'protocols', 'port_types', 'max_disks', 'price')
+
+        self.attr_box = QComboBox()
+        [self.attr_box.addItem(x) for x in attr_names]
+
+        self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            Qt.Horizontal, self)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self.attr_box)
+        vbox.addWidget(self.buttons)
+
+        self.setLayout(vbox)
+        self.setModal(True)
+        self.setWindowTitle('Sort by')
+        self.show()
+
+
+    def data_from_form(self):
+        attr = self.attr_box.currentText()
+        return attr
+
+
+    @staticmethod
+    def get_data():
+        dialog = SortDialog()
+        result = dialog.exec_()
+        data = dialog.data_from_form()
+        return result == QDialog.Accepted, data
