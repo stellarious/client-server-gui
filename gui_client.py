@@ -1,10 +1,10 @@
 import sys
 import pickle
+from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import *
 from PyQt5.QtNetwork import QTcpSocket, QHostAddress
-from dialogs import AddDialog, SearchDialog, SortDialog
+from dialogs import AddDialog, SearchDialog, SortDialog, EditDialog
 
 
 class ClientWindow(QWidget):
@@ -42,13 +42,28 @@ class ClientWindow(QWidget):
 				self.send_query(q)
 
 		elif action == 'Edit':
-			pass
+			try:
+				current_id = self.lst_view.currentItem().text().split('.')[0]
+			except:
+				self.show_message('Choose a record.')
+				return
 
-		elif action == 'Delete':
-			if self.lst_view.count():
-				data = self.lst_view.currentItem().text().split('.')[0]
+			ok, (attr, new_val) = EditDialog.get_data()
+			data = (current_id, attr, new_val)
+
+			if ok:
 				q = (action, data)
 				self.send_query(q)
+
+		elif action == 'Delete':
+			try:
+				data = self.lst_view.currentItem().text().split('.')[0]
+			except:
+				self.show_message('Choose a record.')
+				return
+
+			q = (action, data)
+			self.send_query(q)
 
 		elif action == 'Sort':
 			if self.lst_view.count():
@@ -63,6 +78,10 @@ class ClientWindow(QWidget):
 				if ok:
 					q = (action, data)
 					self.send_query(q)
+
+
+	def show_message(self, message):
+		reply = QMessageBox.question(self, 'Message', message, QMessageBox.Ok)
 
 
 	def send_query(self, data):
@@ -104,8 +123,6 @@ class ClientWindow(QWidget):
 		self.setWindowTitle('Client')
 		self.setGeometry(300, 300, 350, 400)
 		self.setWindowIcon(QIcon('icon.png'))
-
-		self.send_query(('View All', 0)) # init data in list_view
 
 		self.show()
 

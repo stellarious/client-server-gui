@@ -2,8 +2,8 @@ import os
 import sys
 import pickle
 import operator
-from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
 from PyQt5.QtNetwork import QTcpServer, QHostAddress
 from storageModel import StorageSystem
@@ -28,16 +28,14 @@ class ServerWindow(QWidget):
 			'Delete': self.delete_record,
 			'Search': self.search,
 			'Sort': self.sort,
+			'Edit': self.edit_record
 		}
 
 	def initUI(self):
 		self.txt_view = QTextBrowser()
-		quit_button = QPushButton("Stop'n'quit")
-		quit_button.clicked.connect(QCoreApplication.instance().quit)
 
 		vbox = QVBoxLayout()
 		vbox.addWidget(self.txt_view)
-		vbox.addWidget(quit_button)
 
 		self.setLayout(vbox)
 		self.setWindowTitle('Server')
@@ -89,9 +87,12 @@ class ServerWindow(QWidget):
 		if os.path.isfile(dbfilename):
 			with open(dbfilename, 'rb') as f:
 				data = f.read()
-				db = pickle.loads(data)
-				self.txt_view.append('File was loaded.')
-				return db
+				try:
+					db = pickle.loads(data)
+					self.txt_view.append('File was loaded.')
+					return db
+				except:
+					return []
 		else:
 			return []
 
@@ -106,6 +107,28 @@ class ServerWindow(QWidget):
 			return (True, self.db)
 		except Exception as e:
 			return (False, '<<< Bad data')
+
+	def edit_record(self, args):
+		try:
+			obj_id = int(args[0])
+		except:
+			return (False, '<<< Wrong param')
+
+		field, new_value = args[1], args[2]
+
+		try:
+			new_value = int(new_value)
+		except:
+			pass
+
+		for item in self.db:
+			if item.id == obj_id:
+				try:
+					setattr(item, field, new_value)
+					return (True, self.db)
+				except:
+					return (False, '<<< Bad data')
+
 
 	def delete_record(self, obj_id):
 		if not self.db: return '<<< DB is empty'
@@ -133,6 +156,16 @@ class ServerWindow(QWidget):
 	def sort(self, args):
 		sorted_items = list(sorted(self.db, key=operator.attrgetter(args)))
 		return (True, sorted_items)
+
+	def closeEvent(self, event):
+		with open('db.dat', 'wb') as f:
+			data = pickle.dumps(self.db)
+			f.write(data)
+			self.txt_view.append('Data saved.')
+
+		if self.db:
+			with open('last_id', 'w') as tf:
+				tf.write(str(self.db[-1].id))
 
 
 if __name__ == '__main__':
