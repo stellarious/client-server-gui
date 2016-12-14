@@ -45,7 +45,10 @@ class ClientWindow(QWidget):
 			pass
 
 		elif action == 'Delete':
-			pass
+			if self.lst_view.count():
+				data = self.lst_view.currentItem().text().split('.')[0]
+				q = (action, data)
+				self.send_query(q)
 
 		elif action == 'Search':
 			pass
@@ -65,7 +68,7 @@ class ClientWindow(QWidget):
 
 
 	def initUI(self):
-		self.lst_view = QListView()
+		self.lst_view = QListWidget()
 		self.txt_view = QTextBrowser()
 
 		left_vbox = QVBoxLayout()
@@ -99,9 +102,15 @@ class ClientWindow(QWidget):
 		if s.bytesAvailable() > 0:
 			server_reply = s.read(4096)
 
-		str_data = pickle.loads(server_reply)
+		reply = pickle.loads(server_reply)
 
-		self.txt_view.append(str(str_data))
+		ok, data = reply
+		if ok:
+			self.txt_view.append('<<< OK')
+			self.lst_view.clear()
+			[self.lst_view.addItem(QListWidgetItem(str(x))) for x in data]
+		else:
+			self.txt_view.append(str(data))
 
 
 if __name__ == '__main__':

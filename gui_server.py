@@ -5,6 +5,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon
 from PyQt5.QtNetwork import QTcpServer, QHostAddress
+from storageModel import StorageSystem
+
 
 class ServerWindow(QWidget):
 	def __init__(self):
@@ -21,7 +23,8 @@ class ServerWindow(QWidget):
 
 		self.options = {
 			'View All': self.show_all,
-			# 'Add New': pass,
+			'Add New': self.add_record,
+			'Delete': self.delete_record,
 		}
 
 	def initUI(self):
@@ -57,14 +60,10 @@ class ServerWindow(QWidget):
 			client_data = s.read(4096)
 
 		request = pickle.loads(client_data)
-		cmd_name = request[0]
-		cmd_params = request[1]
-
+		cmd_name, cmd_params = request
 		self.txt_view.append('{}: {}'.format(cmd_name, cmd_params))
 
 		try:
-			cmd_name = request[0]
-			cmd_params = request[1]
 			self.send_message(s, self.options[cmd_name](cmd_params))
 		except:
 			self.txt_view.append('Coming soon')
@@ -94,11 +93,27 @@ class ServerWindow(QWidget):
 			return []
 
 	def show_all(self, p):
-		if not self.db: return '<<< DB is empty'
-		items = [str(x) for x in self.db]
-		res = '\n'.join(items)
-		return res
+		if not self.db: return (False, '<<< DB is empty')
+		return (True, self.db)
 
+	def add_record(self, args):
+		try:
+			new_record = StorageSystem(args)
+			self.db.append(new_record)
+			return (True, self.db)
+		except Exception as e:
+			return (False, '<<< Bad data')
+
+	def delete_record(self, obj_id):
+		if not self.db: return '<<< DB is empty'
+
+		obj_id = int(obj_id)
+
+		for item in self.db:
+			if item.id == obj_id:
+				self.db.remove(item)
+				return (True, self.db)
+		return (False, '<<< No such record')
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
